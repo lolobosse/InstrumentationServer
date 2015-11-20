@@ -1,52 +1,12 @@
-async_mode = None
-
-if async_mode is None:
-    try:
-        import eventlet
-        async_mode = 'eventlet'
-    except ImportError:
-        pass
-
-    if async_mode is None:
-        try:
-            from gevent import monkey
-            async_mode = 'gevent'
-        except ImportError:
-            pass
-
-    if async_mode is None:
-        async_mode = 'threading'
-
-    print('async_mode is ' + async_mode)
-
-# monkey patching is necessary because this application uses a background
-# thread
-if async_mode == 'eventlet':
-    import eventlet
-    eventlet.monkey_patch()
-elif async_mode == 'gevent':
-    from gevent import monkey
-    monkey.patch_all()
-
-from flask import Flask, render_template, copy_current_request_context
 import ntpath
-from subprocess import call
-import os
-from thread import start_new_thread
-from flask_socketio import SocketIO, emit
-import socketio
-import time
-from threading import Thread
+
+from flask import Flask
+from flask_socketio import SocketIO
 
 
 def path_leaf(path):
     head, tail = ntpath.split(path)
     return tail or ntpath.basename(head)
-
-app = Flask(__name__)
-#app.debug = True
-app.config['SECRET_KEY'] = 'secret!'
-socketio = SocketIO(app, async_mode=async_mode)
 
 # Run that in the InstrumentationPEP Repository
 
