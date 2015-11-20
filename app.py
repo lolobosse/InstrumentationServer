@@ -1,8 +1,5 @@
 #!/usr/bin/env python
 
-# Set this variable to "threading", "eventlet" or "gevent" to test the
-# different async modes, or leave it set to None for the application to choose
-# the best option based on available packages.
 async_mode = None
 
 if async_mode is None:
@@ -35,28 +32,20 @@ elif async_mode == 'gevent':
 
 import time
 from threading import Thread
-from flask import Flask, render_template, session, request
-from flask_socketio import SocketIO, emit, join_room, leave_room, \
-    close_room, rooms, disconnect
-import InstrumentationScripts as IS
 import subprocess
 from os import chdir
+
+from flask import Flask, render_template
+from flask_socketio import SocketIO, emit
+
+import InstrumentationScripts as IS
+
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
 socketio = SocketIO(app, async_mode=async_mode)
 thread = None
 
-
-# def background_thread():
-#     """Example of how to send server generated events to clients."""
-#     count = 0
-#     while True:
-#         time.sleep(10)
-#         count += 1
-#         socketio.emit('my response',
-#                       {'data': IS.createCommand(), 'count': count},
-#                       namespace='/test')
 
 def background_thread():
     time.sleep(1)
