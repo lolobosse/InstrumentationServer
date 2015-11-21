@@ -52,8 +52,9 @@ def background_thread():
     socketio.emit('my response',
                   {'data': "Thread Started", 'count': 0},
                   namespace='/test')
-    args = IS.createCommand().split()
-    chdir(IS.InstrumentationPepDirectory)
+    cb = IS.CommandBuilder()
+    args = cb.createCommand().split()
+    chdir(cb.InstrumentationPepDirectory)
     process = subprocess.Popen(args, stdout=subprocess.PIPE)
     for out in iter(process.stdout.readline, b""):
         out = '<pre>' + out + '</pre>'
