@@ -1,0 +1,22 @@
+{
+  "name": "InstrumentationScripts",
+  "authors": [
+    "Laurent Meyer <laurent@moid.de>"
+  ],
+  "description": "",
+  "main": "",
+  "moduleType": [],
+  "license": "MIT",
+  "homepage": "jobninja.eu",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "jquery": "~2.1.4"
+  }
+}

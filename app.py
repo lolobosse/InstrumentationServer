@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+# TODO: DO not use CDN, doesn't work in the train !!! Use `bower install --save`
+
 async_mode = None
 
 if async_mode is None:
@@ -35,13 +37,13 @@ from threading import Thread
 import subprocess
 from os import chdir
 
-from flask import Flask, render_template
+from flask import Flask, render_template, send_file
 from flask_socketio import SocketIO, emit
 
 import InstrumentationScripts as IS
 
 
-app = Flask(__name__)
+app = Flask(__name__, static_url_path='')
 app.config['SECRET_KEY'] = 'secret!'
 socketio = SocketIO(app, async_mode=async_mode)
 thread = None
@@ -71,13 +73,26 @@ def index():
     if thread is None:
         thread = Thread(target=background_thread)
         thread.daemon = True
-        thread.start()
+        # thread.start()
     return render_template('index.html')
 
 
 @socketio.on('connect', namespace='/test')
 def test_connect():
     emit('my response', {'data': 'Connected', 'count': 0})
+
+@socketio.on('disconnect', namespace='/test')
+def test_disconnect():
+    # Find the thread in the pool and cancel it if he is still active
+    print('Client disconnected')
+
+@app.route('/jquery')
+def send_jquery():
+    return send_file('bower_components/jquery/dist/jquery.min.js')
+
+@app.route('/socketIo')
+def send_socketio():
+    return send_file('static/socketIo/socketio.js')
 
 
 if __name__ == '__main__':
