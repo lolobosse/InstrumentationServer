@@ -43,6 +43,8 @@ from flask_socketio import SocketIO, emit
 import InstrumentationScripts as IS
 
 
+#TODO Emit only to the client who asked for instrumentation
+
 app = Flask(__name__, static_url_path='')
 app.config['SECRET_KEY'] = 'secret!'
 socketio = SocketIO(app, async_mode=async_mode)
@@ -86,7 +88,7 @@ def test_connect():
 
 @socketio.on('disconnect', namespace='/test')
 def test_disconnect():
-    # Find the thread in the pool and cancel it if he is still active
+    thread_map[request.sid] = False
     print('Client disconnected')
 
 @socketio.on('startInstrumentation', namespace='/test')
