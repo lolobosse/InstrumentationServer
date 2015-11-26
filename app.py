@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 
-# TODO: DO not use CDN, doesn't work in the train !!! Use `bower install --save`
-
 async_mode = None
 
 if async_mode is None:
@@ -36,8 +34,10 @@ import time
 from threading import Thread
 import subprocess
 from os import chdir
+import os
+import signal
 
-from flask import Flask, render_template, send_file
+from flask import Flask, render_template, send_file, request, session
 from flask_socketio import SocketIO, emit
 
 import InstrumentationScripts as IS
@@ -48,8 +48,10 @@ app.config['SECRET_KEY'] = 'secret!'
 socketio = SocketIO(app, async_mode=async_mode)
 thread = None
 
+thread_map = {}
 
-def background_thread():
+
+def background_thread(sid):
     time.sleep(1)
     socketio.emit('my response',
                   {'data': "Thread Started", 'count': 0},
@@ -59,9 +61,14 @@ def background_thread():
     chdir(cb.InstrumentationPepDirectory)
     process = subprocess.Popen(args, stdout=subprocess.PIPE)
     for out in iter(process.stdout.readline, b""):
-        out = '<pre>' + out + '</pre>'
-        socketio.emit('my response', {'data': out, 'count':0}, namespace='/test')
-        time.sleep(0.001)
+        if (thread_map[sid]):
+            out = '<pre>' + out + '</pre>'
+            socketio.emit('my response', {'data': out, 'count':0}, namespace='/test')
+            time.sleep(0.001)
+        else:
+            os.kill(process.pid, signal.SIGUSR1)
+            print 'Java Process was killed'
+            break
     socketio.emit('my response',
                   {'data': "Thread Finished", 'count': 0},
                   namespace='/test')
@@ -69,22 +76,30 @@ def background_thread():
 
 @app.route('/')
 def index():
-    global thread
-    if thread is None:
-        thread = Thread(target=background_thread)
-        thread.daemon = True
-        # thread.start()
     return render_template('index.html')
 
 
 @socketio.on('connect', namespace='/test')
 def test_connect():
-    emit('my response', {'data': 'Connected', 'count': 0})
+    print request.sid
+    emit('my response', {'data': 'Connected\n', 'count': 0})
 
 @socketio.on('disconnect', namespace='/test')
 def test_disconnect():
     # Find the thread in the pool and cancel it if he is still active
     print('Client disconnected')
+
+@socketio.on('startInstrumentation', namespace='/test')
+def test_start_stop(message):
+    if message['data']:
+        thread = Thread(target=background_thread, args=(request.sid,))
+        thread.daemon = True
+        thread.setName(request.sid)
+        thread_map[request.sid] = True
+        thread.start()
+    else:
+        thread_map[request.sid] = False
+
 
 @app.route('/jquery')
 def send_jquery():

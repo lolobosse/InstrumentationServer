@@ -24,11 +24,25 @@
             socket.on('connect', function() {
                 socket.emit('my event', {data: 'I\'m connected!'});
             });
+            var clicked = false;
+           $('form#go').submit(function(event) {
+               clicked = !clicked;
+                socket.emit('startInstrumentation',  {data: clicked});
+               if (clicked){
+                   while ($('#log').firstChild) {
+                       $('#log').removeChild($('#log').firstChild);
+                   }
+               }
+                return false;
+            });
         });
     </script>
 </head>
 <body>
     <h2>Receive:</h2>
+    <form id="go" method="POST" action='#'>
+        <input type="submit" value="Go!">
+    </form>
     <div id="log"></div>
 </body>
 </html>
