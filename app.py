@@ -43,7 +43,9 @@ from flask_socketio import SocketIO, emit
 import InstrumentationScripts as IS
 
 
-#TODO Emit only to the client who asked for instrumentation
+# TODO Emit only to the client who asked for instrumentation: using that (warning maybe a bit qd):
+# socketio.server._emit_internal(sid, 'my response', {'data': 'Only to you', 'count': 0}, '/test', 0)
+
 
 app = Flask(__name__, static_url_path='')
 app.config['SECRET_KEY'] = 'secret!'
@@ -55,6 +57,8 @@ thread_map = {}
 
 def background_thread(sid):
     time.sleep(1)
+    print dir(socketio)
+    print dir(socketio.server)
     socketio.emit('my response',
                   {'data': "Thread Started", 'count': 0},
                   namespace='/test')
@@ -63,7 +67,7 @@ def background_thread(sid):
     chdir(cb.InstrumentationPepDirectory)
     process = subprocess.Popen(args, stdout=subprocess.PIPE)
     for out in iter(process.stdout.readline, b""):
-        if (thread_map[sid]):
+        if thread_map[sid]:
             out = '<pre>' + out + '</pre>'
             socketio.emit('my response', {'data': out, 'count':0}, namespace='/test')
             time.sleep(0.001)
@@ -74,6 +78,8 @@ def background_thread(sid):
     socketio.emit('my response',
                   {'data': "Thread Finished", 'count': 0},
                   namespace='/test')
+    thread_map[sid] = False
+
 
 
 @app.route('/')
@@ -83,8 +89,7 @@ def index():
 
 @socketio.on('connect', namespace='/test')
 def test_connect():
-    print request.sid
-    emit('my response', {'data': 'Connected\n', 'count': 0})
+    emit('my response', {'data': 'Connected<br>', 'count': 0})
 
 @socketio.on('disconnect', namespace='/test')
 def test_disconnect():

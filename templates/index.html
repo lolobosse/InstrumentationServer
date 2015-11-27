@@ -4,45 +4,46 @@
     <title>Flask-SocketIO Test</title>
     <script type="text/javascript" src="./jquery"></script>
     <script type="text/javascript" src="./socketIo"></script>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/main.css') }}">
     <script type="text/javascript" charset="utf-8">
-        $(document).ready(function(){
+        var socket;
+        $(document).ready(function () {
             namespace = '/test'; // change to an empty string to use the global namespace
 
             // the socket.io documentation recommends sending an explicit package upon connection
             // this is specially important when using the global namespace
-            var socket = io.connect('http://' + document.domain + ':' + location.port + namespace);
+            socket = io.connect('http://' + document.domain + ':' + location.port + namespace);
 
             // event handler for server sent data
             // the data is displayed in the "Received" section of the page
-            socket.on('my response', function(msg) {
+            socket.on('my response', function (msg) {
                 var log = $('#log');
                 log.append(msg.data);
-                window.scrollTo(0,document.body.scrollHeight);
+                window.scrollTo(0, document.body.scrollHeight);
             });
 
             // event handler for new connections
-            socket.on('connect', function() {
+            socket.on('connect', function () {
                 socket.emit('my event', {data: 'I\'m connected!'});
             });
-            var clicked = false;
-           $('form#go').submit(function(event) {
-               clicked = !clicked;
-                socket.emit('startInstrumentation',  {data: clicked});
-               if (clicked){
-                   while ($('#log').firstChild) {
-                       $('#log').removeChild($('#log').firstChild);
-                   }
-               }
-                return false;
-            });
         });
+
+        var clicked = false;
+
+        function startStop(element) {
+            clicked = !clicked;
+            element.innerHTML = clicked ? "STOP!" : "GO!";
+            socket.emit('startInstrumentation', {data: clicked});
+        }
     </script>
 </head>
 <body>
-    <h2>Receive:</h2>
-    <form id="go" method="POST" action='#'>
-        <input type="submit" value="Go!">
-    </form>
-    <div id="log"></div>
+<h2>Instumentation</h2>
+
+<span class="button raised blue" style="position: fixed; top: 10px; right: 10px">
+    <div class="center" fit onclick="startStop(this)">GO!</div>
+    <paper-ripple fit></paper-ripple>
+</span>
+<div id="log"></div>
 </body>
 </html>
