@@ -30,6 +30,7 @@ There is currently no `setup.py` so you have to do all manually (but I'll do tha
   * [Flask SocketIO](https://flask-socketio.readthedocs.org/en/latest/) (`pip install flask-socketio`)
   * [Eventlet](http://eventlet.net/) (`pip install eventlet`)
   * [Gevent](https://pypi.python.org/pypi/gevent/1.1rc1) (`pip install gevent`)
+* Install [Bower](http://bower.io) and use it to install `JQuery` (`bower install jquery`)
 * Clone the [DroidForce Repo](https://github.com/secure-software-engineering/DroidForce.git) and configure the [config file](config.ini).
 
 ###Known issues
