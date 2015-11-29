@@ -57,15 +57,13 @@ thread_map = {}
 
 def background_thread(sid):
     time.sleep(1)
-    print dir(socketio)
-    print dir(socketio.server)
     socketio.emit('my response',
                   {'data': "Thread Started", 'count': 0},
                   namespace='/test')
     cb = IS.CommandBuilder()
     args = cb.createCommand().split()
     chdir(cb.InstrumentationPepDirectory)
-    process = subprocess.Popen(args, stdout=subprocess.PIPE)
+    process = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     for out in iter(process.stdout.readline, b""):
         if thread_map[sid]:
             out = '<pre>' + out + '</pre>'
