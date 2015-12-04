@@ -105,9 +105,11 @@ class CommandBuilder:
 
 
     def createCommandSign(self):
-        return " ".join([self.jarsigner, self.keystoreOption, self.keyStorePath, self.storePassOption, self.storePass,
-                         self.signedJarOption,
-                         self.outputDirectoryAndFileName, self.outputDirectoryPath + self.apkName, self.alias])
+        signCommand = " ".join([self.jarsigner, self.keystoreOption, self.keyStorePath, self.storePassOption, self.storePass,
+                         self.signedJarOption, self.outputDirectoryAndFileName, self.outputDirectoryPath + self.apkName,
+                         self.alias])
+        print signCommand
+        return signCommand
 
     def ConfigSectionMap(self, section):
         dict1 = {}

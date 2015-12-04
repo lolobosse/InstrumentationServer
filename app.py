@@ -55,6 +55,18 @@ thread = None
 thread_map = {}
 
 
+def log(process, sid):
+    for out in iter(process.stdout.readline, b""):
+        if thread_map[sid]:
+            out = '<pre>' + out + '</pre>'
+            socketio.emit('my response', {'data': out, 'count': 0}, namespace='/test')
+            time.sleep(0.001)
+        else:
+            os.kill(process.pid, signal.SIGUSR1)
+            print 'Java Process was killed'
+            break
+
+
 def background_thread(sid):
     time.sleep(1)
     socketio.emit('my response',
@@ -63,16 +75,11 @@ def background_thread(sid):
     cb = IS.CommandBuilder()
     args = cb.createCommand().split()
     chdir(cb.InstrumentationPepDirectory)
-    process = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    for out in iter(process.stdout.readline, b""):
-        if thread_map[sid]:
-            out = '<pre>' + out + '</pre>'
-            socketio.emit('my response', {'data': out, 'count':0}, namespace='/test')
-            time.sleep(0.001)
-        else:
-            os.kill(process.pid, signal.SIGUSR1)
-            print 'Java Process was killed'
-            break
+    instrumentation = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    log(instrumentation, sid)
+    print(cb.createCommandSign())
+    sign = subprocess.Popen(cb.createCommandSign().split(), stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    log(sign, sid)
     socketio.emit('my response',
                   {'data': "Thread Finished", 'count': 0},
                   namespace='/test')
@@ -87,6 +94,7 @@ def index():
 
 @socketio.on('connect', namespace='/test')
 def test_connect():
+    print("Client connected")
     emit('my response', {'data': 'Connected<br>', 'count': 0})
 
 @socketio.on('disconnect', namespace='/test')

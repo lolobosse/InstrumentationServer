@@ -20,6 +20,9 @@
                 var log = $('#log');
                 log.append(msg.data);
                 window.scrollTo(0, document.body.scrollHeight);
+                if (msg.data == "Thread Finished"){
+                    $(".center")[0].innerHTML = "GO!"
+                }
             });
 
             // event handler for new connections
