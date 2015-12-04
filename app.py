@@ -7,6 +7,7 @@ async_mode = None
 if async_mode is None:
     try:
         import eventlet
+
         async_mode = 'eventlet'
     except ImportError:
         pass
@@ -14,6 +15,7 @@ if async_mode is None:
     if async_mode is None:
         try:
             from gevent import monkey
+
             async_mode = 'gevent'
         except ImportError:
             pass
@@ -27,9 +29,11 @@ if async_mode is None:
 # thread
 if async_mode == 'eventlet':
     import eventlet
+
     eventlet.monkey_patch()
 elif async_mode == 'gevent':
     from gevent import monkey
+
     monkey.patch_all()
 
 import time
@@ -56,6 +60,7 @@ socketio = SocketIO(app, async_mode=async_mode)
 thread = None
 
 thread_map = {}
+objects_for_thread = {}
 
 
 def log(process, sid):
@@ -76,18 +81,25 @@ def background_thread(sid):
                   {'data': "Thread Started", 'count': 0},
                   namespace='/test')
     cb = IS.CommandBuilder()
+    # Replace the ini with the upload at runtime
+    if 'Apk' in objects_for_thread[sid].keys():
+        cb.apkFilePath = objects_for_thread[sid]['Apk']
+    if 'Source' in objects_for_thread[sid].keys():
+        cb.sourceFilePath = objects_for_thread[sid]['Source']
+    if 'Sink' in objects_for_thread[sid].keys():
+        cb.sinkFilePath = objects_for_thread[sid]['Sink']
+    if 'TaintWrapper' in objects_for_thread[sid].keys():
+        cb.taintWrapperPath = objects_for_thread[sid]['TaintWrapper']
     args = cb.createCommand().split()
     chdir(cb.InstrumentationPepDirectory)
     instrumentation = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     log(instrumentation, sid)
-    print(cb.createCommandSign())
     sign = subprocess.Popen(cb.createCommandSign().split(), stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     log(sign, sid)
     socketio.emit('my response',
                   {'data': "Thread Finished", 'count': 0},
                   namespace='/test')
     thread_map[sid] = False
-
 
 
 @app.route('/')
@@ -100,10 +112,12 @@ def test_connect():
     print("Client connected")
     emit('my response', {'data': 'Connected<br>', 'count': 0})
 
+
 @socketio.on('disconnect', namespace='/test')
 def test_disconnect():
     thread_map[request.sid] = False
     print('Client disconnected')
+
 
 @socketio.on('startInstrumentation', namespace='/test')
 def test_start_stop(message):
@@ -121,24 +135,25 @@ def test_start_stop(message):
 def send_jquery():
     return send_file('bower_components/jquery/dist/jquery.min.js')
 
+
 @app.route('/socketIo')
 def send_socketio():
     return send_file('static/socketIo/socketio.js')
 
 
 def saveFile(target, upload):
-    print "We're in saveFile"
     filename = upload.filename.rsplit("/")[0]
     destination = "/".join([target, filename])
     print "Accept incoming file:", filename
     print "Save it to:", destination
     upload.save(destination)
+    return destination
 
 
 @app.route('/upload', methods=["POST"])
 def upload():
     form = request.form
-     # Create a unique "session ID" for this particular batch of uploads.
+    # Create a unique "session ID" for this particular batch of uploads.
     upload_key = str(uuid4())
 
     # Is the upload using Ajax, or a direct POST by the form?
@@ -157,26 +172,22 @@ def upload():
             return ajax_response(False, "Couldn't create upload directory: {}".format(target))
         else:
             return "Couldn't create upload directory: {}".format(target)
-    print "=== Form Data ==="
-    for key, value in form.items():
-        print key, "=>", value
     print(request.files.getlist("file"))
     if request.files.has_key("Apk"):
         upload = request.files.get("Apk")
-        saveFile(target, upload)
+        objects_for_thread[form['sid']] = {'Apk': saveFile(target, upload)}
+        print(objects_for_thread)
     if request.files.has_key("Source"):
         upload = request.files.get("Source")
-        saveFile(target, upload)
+        objects_for_thread[form['sid']] = {'Source': saveFile(target, upload)}
     if request.files.has_key("Sink"):
         upload = request.files.get("Sink")
-        saveFile(target, upload)
+        objects_for_thread[form['sid']] = {'Sink': saveFile(target, upload)}
     if request.files.has_key("TaintWrapper"):
         upload = request.files.get("TaintWrapper")
-        saveFile(target, upload)
-    if is_ajax:
-        return ajax_response(True, upload_key)
-    else:
-        return redirect(url_for("upload_complete", uuid=upload_key))
+        objects_for_thread[form['sid']] = {'TaintWrapper': saveFile(target, upload)}
+    return ajax_response(True, upload_key)
+
 
 
 def ajax_response(status, msg):
@@ -185,6 +196,7 @@ def ajax_response(status, msg):
         status=status_code,
         msg=msg,
     ))
+
 
 if __name__ == '__main__':
     socketio.run(app, debug=True)
