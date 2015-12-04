@@ -8,6 +8,12 @@
     <script type="text/javascript" charset="utf-8">
         var socket;
         $(document).ready(function () {
+
+            var PENDING_FILES  = [];
+            var UPLOAD_URL = "/upload";
+
+
+            initDropbox();
             namespace = '/test'; // change to an empty string to use the global namespace
 
             // the socket.io documentation recommends sending an explicit package upon connection
@@ -20,7 +26,7 @@
                 var log = $('#log');
                 log.append(msg.data);
                 window.scrollTo(0, document.body.scrollHeight);
-                if (msg.data == "Thread Finished"){
+                if (msg.data == "Thread Finished") {
                     $(".center")[0].innerHTML = "GO!"
                 }
             });
@@ -29,6 +35,74 @@
             socket.on('connect', function () {
                 socket.emit('my event', {data: 'I\'m connected!'});
             });
+
+
+            function handleFiles(files) {
+                // Add them to the pending files list.
+                for (var i = 0, ie = files.length; i < ie; i++) {
+                PENDING_FILES.push(files[i]);
+                }
+            }
+
+            function initDropbox() {
+                var $dropbox = $("#dropbox");
+                $dropbox.on("dragenter", function (e) {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    $(this).addClass("active");
+                });
+
+                // On drag over...
+                $dropbox.on("dragover", function(e) {
+                e.stopPropagation();
+                e.preventDefault();
+                });
+
+                // On drop...
+                $dropbox.on("drop", function(e) {
+                e.preventDefault();
+                $(this).removeClass("active");
+                var files = e.originalEvent.dataTransfer.files;
+                handleFiles(files);
+
+                // Update the display to acknowledge the number of pending files.
+                $dropbox.text(PENDING_FILES.length + " files ready for upload!");
+            })}
+
+            // Handle the submit button.
+            function doUpload() {
+                var fd = new FormData();
+                fd.append("file", PENDING_FILES[0]);
+                fd.append("__ajax", true);
+                var xhr = $.ajax({
+                    // TODO: progress of the upload
+                    url: UPLOAD_URL,
+                    method: "POST",
+                    contentType: false,
+                    processData: false,
+                    cache: false,
+                    data: fd,
+                    success: function(data){
+                        data = JSON.parse(data);
+                        if (data.status == "error"){
+                            alert(JSON.stringify(data))
+                        }
+                        else{
+                            alert("Success")
+                        }
+                    }
+                });
+            }
+
+            $("#upload-button").on("click", function(e) {
+            // If the user has JS disabled, none of this code is running but the
+            // file multi-upload input box should still work. In this case they'll
+            // just POST to the upload endpoint directly. However, with JS we'll do
+            // the POST using ajax and then redirect them ourself when done.
+            e.preventDefault();
+            doUpload();
+    })
+
         });
 
         var clicked = false;
@@ -47,6 +121,15 @@
     <div class="center" fit onclick="startStop(this)">GO!</div>
     <paper-ripple fit></paper-ripple>
 </span>
+
+<form id="uploadForm" action="#" method="POST" enctype="multipart/form-data">
+    <div id="dropbox">
+        Drag And Drop APKs there.
+    </div>
+
+    <input type="submit" value="Upload!" id="upload-button">
+
+</form>
 <div id="log"></div>
 </body>
 </html>
