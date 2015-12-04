@@ -125,6 +125,16 @@ def send_jquery():
 def send_socketio():
     return send_file('static/socketIo/socketio.js')
 
+
+def saveFile(target, upload):
+    print "We're in saveFile"
+    filename = upload.filename.rsplit("/")[0]
+    destination = "/".join([target, filename])
+    print "Accept incoming file:", filename
+    print "Save it to:", destination
+    upload.save(destination)
+
+
 @app.route('/upload', methods=["POST"])
 def upload():
     form = request.form
@@ -150,14 +160,19 @@ def upload():
     print "=== Form Data ==="
     for key, value in form.items():
         print key, "=>", value
-
-    for upload in request.files.getlist("file"):
-        filename = upload.filename.rsplit("/")[0]
-        destination = "/".join([target, filename])
-        print "Accept incoming file:", filename
-        print "Save it to:", destination
-        upload.save(destination)
-
+    print(request.files.getlist("file"))
+    if request.files.has_key("Apk"):
+        upload = request.files.get("Apk")
+        saveFile(target, upload)
+    if request.files.has_key("Source"):
+        upload = request.files.get("Source")
+        saveFile(target, upload)
+    if request.files.has_key("Sink"):
+        upload = request.files.get("Sink")
+        saveFile(target, upload)
+    if request.files.has_key("TaintWrapper"):
+        upload = request.files.get("TaintWrapper")
+        saveFile(target, upload)
     if is_ajax:
         return ajax_response(True, upload_key)
     else:

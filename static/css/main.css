@@ -208,14 +208,15 @@ section > * {
     color: #d23f31;
 }
 
-#dropbox {
+.dropbox{
     border: 2px dashed #000000;
     padding: 20px;
+    width: 25%;
+    margin: 20px;
 }
 
-#dropbox.active {
+.dropbox.active {
     border: 4px dashed #FF0000;
 }
-
     
  

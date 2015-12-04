@@ -9,9 +9,10 @@
         var socket;
         $(document).ready(function () {
 
-            var PENDING_FILES  = [];
+            var PENDING_FILES = {};
             var UPLOAD_URL = "/upload";
 
+            var sid = null;
 
             initDropbox();
             namespace = '/test'; // change to an empty string to use the global namespace
@@ -23,6 +24,9 @@
             // event handler for server sent data
             // the data is displayed in the "Received" section of the page
             socket.on('my response', function (msg) {
+                if (sid == null){
+                    sid = this.id;
+                }
                 var log = $('#log');
                 log.append(msg.data);
                 window.scrollTo(0, document.body.scrollHeight);
@@ -37,43 +41,47 @@
             });
 
 
-            function handleFiles(files) {
-                // Add them to the pending files list.
-                for (var i = 0, ie = files.length; i < ie; i++) {
-                PENDING_FILES.push(files[i]);
-                }
-            }
-
             function initDropbox() {
-                var $dropbox = $("#dropbox");
-                $dropbox.on("dragenter", function (e) {
-                    e.stopPropagation();
-                    e.preventDefault();
-                    $(this).addClass("active");
+                var $dropbox = $(".dropbox").each(function (index) {
+                    $(this).on("dragenter", function (e) {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        $($(this)).addClass("active");
+                    });
+
+                    // On drag over...
+                    $(this).on("dragover", function (e) {
+                        e.stopPropagation();
+                        e.preventDefault();
+                    });
+
+                    $(this).on("dragleave", function (e) {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        $(this).removeClass("active");
+                    });
+
+
+                    // On drop...
+                    $(this).on("drop", function (e) {
+                        e.preventDefault();
+                        $(this).removeClass("active");
+                        var file = e.originalEvent.dataTransfer.files;
+                        PENDING_FILES[$(this)[0].id]=file;
+                        // Update the display to acknowledge the number of pending files.
+                        $(this).text($(this)[0].id+" is ready to be uploaded");
+                    })
                 });
-
-                // On drag over...
-                $dropbox.on("dragover", function(e) {
-                e.stopPropagation();
-                e.preventDefault();
-                });
-
-                // On drop...
-                $dropbox.on("drop", function(e) {
-                e.preventDefault();
-                $(this).removeClass("active");
-                var files = e.originalEvent.dataTransfer.files;
-                handleFiles(files);
-
-                // Update the display to acknowledge the number of pending files.
-                $dropbox.text(PENDING_FILES.length + " files ready for upload!");
-            })}
+            }
 
             // Handle the submit button.
             function doUpload() {
                 var fd = new FormData();
-                fd.append("file", PENDING_FILES[0]);
+                for (var key in PENDING_FILES){
+                    fd.append(key, PENDING_FILES[key][0]);
+                }
                 fd.append("__ajax", true);
+                fd.append("sid", sid);
                 var xhr = $.ajax({
                     // TODO: progress of the upload
                     url: UPLOAD_URL,
@@ -82,26 +90,26 @@
                     processData: false,
                     cache: false,
                     data: fd,
-                    success: function(data){
+                    success: function (data) {
                         data = JSON.parse(data);
-                        if (data.status == "error"){
+                        if (data.status == "error") {
                             alert(JSON.stringify(data))
                         }
-                        else{
-                            alert("Success")
+                        else {
+                            console.log("Success")
                         }
                     }
                 });
             }
 
-            $("#upload-button").on("click", function(e) {
-            // If the user has JS disabled, none of this code is running but the
-            // file multi-upload input box should still work. In this case they'll
-            // just POST to the upload endpoint directly. However, with JS we'll do
-            // the POST using ajax and then redirect them ourself when done.
-            e.preventDefault();
-            doUpload();
-    })
+            $("#upload-button").on("click", function (e) {
+                // If the user has JS disabled, none of this code is running but the
+                // file multi-upload input box should still work. In this case they'll
+                // just POST to the upload endpoint directly. However, with JS we'll do
+                // the POST using ajax and then redirect them ourself when done.
+                e.preventDefault();
+                doUpload();
+            })
 
         });
 
@@ -123,10 +131,24 @@
 </span>
 
 <form id="uploadForm" action="#" method="POST" enctype="multipart/form-data">
-    <div id="dropbox">
+    <span class="dropbox" id="Apk">
         Drag And Drop APKs there.
-    </div>
+    </span>
 
+    <span class="dropbox" id="Source">
+        Drag And Drop custom sources there.
+    </span>
+
+    <span class="dropbox" id="Sink">
+        Drag And Drop custom sinks there.
+    </span>
+
+    <span class="dropbox" id="TaintWrapper">
+        Drag And Drop custom taint there.
+    </span>
+    {#    Ugly code CAUTION#}
+    <br><br>
+    <br>
     <input type="submit" value="Upload!" id="upload-button">
 
 </form>
